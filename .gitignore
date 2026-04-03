@@ -7,6 +7,9 @@ frontend/.env
 backend/target/
 backend/.env
 backend/*.jar
+backend/.mvn/wrapper/maven-wrapper.jar
+backend/!**/src/main/**/target/
+backend/!**/src/test/**/target/
 
 # AI Service
 ai-service/venv/
