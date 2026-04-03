@@ -1,0 +1,93 @@
+{
+  "app_name": "దుకాణ్ దోస్త్",
+  "app_tagline": "మీ AI వ్యాపార సహాయకుడు",
+  "nav": {
+    "home": "హోమ్",
+    "add": "జోడించు",
+    "history": "చరిత్ర",
+    "charts": "చార్ట్‌లు"
+  },
+  "auth": {
+    "login": "లాగిన్",
+    "register": "రిజిస్టర్",
+    "phone": "ఫోన్ నంబర్",
+    "password": "పాస్‌వర్డ్",
+    "confirm_password": "పాస్‌వర్డ్ నిర్ధారించండి",
+    "owner_name": "మీ పేరు",
+    "shop_name": "దుకాణం పేరు",
+    "language": "భాష ఎంచుకోండి",
+    "login_btn": "లాగిన్ చేయండి",
+    "register_btn": "ఖాతా సృష్టించండి",
+    "no_account": "ఖాతా లేదా?",
+    "has_account": "ఖాతా ఉందా?",
+    "logout": "లాగ్ అవుట్"
+  },
+  "dashboard": {
+    "greeting": "నమస్కారం",
+    "today_summary": "ఈరోజు సారాంశం",
+    "total_sales": "మొత్తం అమ్మకాలు",
+    "total_expenses": "మొత్తం ఖర్చులు",
+    "net_profit": "నికర లాభం",
+    "net_loss": "నికర నష్టం",
+    "pending_udhaar": "బాకీ ఉధార్",
+    "recent": "ఇటీవలి లావాదేవీలు",
+    "no_transactions": "ఇంకా లావాదేవీలు లేవు",
+    "no_transactions_desc": "మీ మొదటి అమ్మకం లేదా ఖర్చును జోడించడానికి + బటన్ నొక్కండి",
+    "generate_summary": "AI సారాంశం రూపొందించండి",
+    "ai_summary": "AI రోజువారీ సారాంశం"
+  },
+  "input": {
+    "title": "లావాదేవీ జోడించండి",
+    "voice_tab": "వాయిస్",
+    "text_tab": "టెక్స్ట్",
+    "quick_tab": "త్వరగా",
+    "voice_hint": "మైక్ నొక్కి మీ అమ్మకం లేదా ఖర్చు చెప్పండి",
+    "voice_hint_recording": "వింటున్నాను... ఇప్పుడు చెప్పండి",
+    "text_placeholder": "మీ అమ్మకం లేదా ఖర్చు ఇక్కడ టైప్ చేయండి...",
+    "text_example": "ఉదాహరణ: రామేష్ కి 500 బియ్యం అమ్మాను",
+    "send": "పంపు",
+    "sale": "అమ్మకం",
+    "expense": "ఖర్చు",
+    "udhaar_given": "ఉధార్ ఇచ్చారు",
+    "udhaar_received": "ఉధార్ తిరిగి వచ్చింది",
+    "amount": "మొత్తం (₹)",
+    "description": "వివరణ",
+    "customer_name": "కస్టమర్ పేరు",
+    "category": "విభాగం",
+    "confirm_title": "లావాదేవీ నిర్ధారించండి",
+    "confirm_save": "సేవ్ చేయి",
+    "confirm_edit": "మార్చు",
+    "confirm_cancel": "రద్దు",
+    "saved_success": "లావాదేవీ విజయవంతంగా సేవ్ చేయబడింది!",
+    "parsing": "AI మీ ఇన్‌పుట్‌ను అర్థం చేసుకుంటోంది..."
+  },
+  "history": {
+    "title": "లావాదేవీ చరిత్ర",
+    "today": "ఈరోజు",
+    "yesterday": "నిన్న",
+    "this_week": "ఈ వారం",
+    "filter": "ఫిల్టర్",
+    "all": "అన్నీ",
+    "search": "లావాదేవీలు శోధించండి..."
+  },
+  "charts": {
+    "title": "వారపు నివేదిక",
+    "weekly_chart": "లాభం / నష్టం (చివరి 7 రోజులు)",
+    "best_day": "ఉత్తమ రోజు",
+    "worst_day": "చెత్త రోజు",
+    "avg_daily": "రోజువారీ సగటు",
+    "total_week": "వారపు మొత్తం",
+    "ai_insight": "AI వారపు అంతర్దృష్టి",
+    "generate_insight": "AI అంతర్దృష్టి రూపొందించండి"
+  },
+  "common": {
+    "loading": "లోడ్ అవుతోంది...",
+    "error": "ఏదో తప్పు జరిగింది",
+    "retry": "మళ్ళీ ప్రయత్నించండి",
+    "save": "సేవ్ చేయి",
+    "cancel": "రద్దు",
+    "delete": "తొలగించు",
+    "edit": "మార్చు",
+    "rupee": "₹"
+  }
+}
