@@ -61,6 +61,9 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+import routes
+app.include_router(routes.router)
+
 logger.info(f"CORS enabled for origins: {ALLOWED_ORIGINS}")
 
 

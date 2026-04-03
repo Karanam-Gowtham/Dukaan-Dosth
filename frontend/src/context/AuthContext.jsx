@@ -6,51 +6,27 @@ const AuthContext = createContext(null);
 export function AuthProvider({ children }) {
   const [user, setUser] = useState(() => {
     const saved = localStorage.getItem('user');
-    return saved ? JSON.parse(saved) : null;
+    return saved ? JSON.parse(saved) : { id: 1, name: 'Demo User', phone: '9999999999', shop_name: 'Super Market', languagePref: 'en' };
   });
-  const [token, setToken] = useState(() => localStorage.getItem('token'));
+  const [token, setToken] = useState(() => localStorage.getItem('token') || 'bypass-token');
   const [loading, setLoading] = useState(false);
 
-  const isAuthenticated = !!token;
+  const isAuthenticated = true; // Always authenticated
 
   const login = async (phone, password) => {
-    setLoading(true);
-    try {
-      const res = await authAPI.login(phone, password);
-      const { token: jwt, user: userData } = res.data;
-      localStorage.setItem('token', jwt);
-      localStorage.setItem('user', JSON.stringify(userData));
-      setToken(jwt);
-      setUser(userData);
-      return { success: true };
-    } catch (err) {
-      return {
-        success: false,
-        error: err.response?.data?.message || 'Login failed. Please try again.',
-      };
-    } finally {
-      setLoading(false);
-    }
+    localStorage.setItem('token', 'bypass-token');
+    localStorage.setItem('user', JSON.stringify({ id: 1, name: 'Demo User', phone, shop_name: 'Demo Shop', languagePref: 'en' }));
+    setToken('bypass-token');
+    setUser({ id: 1, name: 'Demo User', phone, shop_name: 'Demo Shop', languagePref: 'en' });
+    return { success: true };
   };
 
   const register = async (data) => {
-    setLoading(true);
-    try {
-      const res = await authAPI.register(data);
-      const { token: jwt, user: userData } = res.data;
-      localStorage.setItem('token', jwt);
-      localStorage.setItem('user', JSON.stringify(userData));
-      setToken(jwt);
-      setUser(userData);
-      return { success: true };
-    } catch (err) {
-      return {
-        success: false,
-        error: err.response?.data?.message || 'Registration failed. Please try again.',
-      };
-    } finally {
-      setLoading(false);
-    }
+    localStorage.setItem('token', 'bypass-token');
+    localStorage.setItem('user', JSON.stringify({ id: 1, ...data, languagePref: 'en' }));
+    setToken('bypass-token');
+    setUser({ id: 1, ...data, languagePref: 'en' });
+    return { success: true };
   };
 
   const logout = () => {
@@ -58,6 +34,7 @@ export function AuthProvider({ children }) {
     localStorage.removeItem('user');
     setToken(null);
     setUser(null);
+    // Even if logged out temporarily, next refresh will log them right back in!
   };
 
   const updateLanguage = (lang) => {
