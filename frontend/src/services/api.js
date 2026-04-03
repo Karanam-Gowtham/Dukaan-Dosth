@@ -1,97 +1,108 @@
 import axios from 'axios';
 
-const API_BASE = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000/api';
+// Base URLs
+const DATA_BACKEND_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8080/api';
+const AI_SERVICE_URL = import.meta.env.VITE_AI_SERVICE_URL || 'http://localhost:8000/api/ai';
 
-const api = axios.create({
-  baseURL: API_BASE,
-  headers: {
-    'Content-Type': 'application/json',
-  },
-});
+// Base config for interceptors
+const setupInterceptors = (instance) => {
+  instance.interceptors.request.use(
+    (config) => {
+      const token = localStorage.getItem('token');
+      if (token) {
+        config.headers.Authorization = `Bearer ${token}`;
+      }
+      return config;
+    },
+    (error) => Promise.reject(error)
+  );
 
-// Add JWT token to every request
-api.interceptors.request.use(
-  (config) => {
-    const token = localStorage.getItem('token');
-    if (token) {
-      config.headers.Authorization = `Bearer ${token}`;
+  instance.interceptors.response.use(
+    (response) => response,
+    (error) => {
+      if (error.response?.status === 401) {
+        localStorage.removeItem('token');
+        localStorage.removeItem('user');
+        // Avoid redirect loop if already on login page
+        if (!window.location.pathname.startsWith('/login')) {
+          window.location.href = '/login';
+        }
+      }
+      return Promise.reject(error);
     }
-    return config;
-  },
-  (error) => Promise.reject(error)
-);
+  );
+  return instance;
+};
 
-// Handle 401 responses (token expired)
-api.interceptors.response.use(
-  (response) => response,
-  (error) => {
-    if (error.response?.status === 401) {
-      localStorage.removeItem('token');
-      localStorage.removeItem('user');
-      window.location.href = '/login';
-    }
-    return Promise.reject(error);
-  }
-);
+// Create two separate axios instances
+const dataApi = setupInterceptors(axios.create({
+  baseURL: DATA_BACKEND_URL,
+  headers: { 'Content-Type': 'application/json' },
+}));
+
+const aiApiInstance = setupInterceptors(axios.create({
+  baseURL: AI_SERVICE_URL,
+  headers: { 'Content-Type': 'application/json' },
+}));
 
 // ---------- Auth APIs ----------
 export const authAPI = {
   login: (phone, password) =>
-    api.post('/auth/login', { phone, password }),
+    dataApi.post('/auth/login', { phone, password }),
 
   register: (data) =>
-    api.post('/auth/register', data),
+    dataApi.post('/auth/register', data),
 
   getMe: () =>
-    api.get('/auth/me'),
+    dataApi.get('/auth/me'),
 };
 
 // ---------- Transaction APIs ----------
 export const transactionAPI = {
   create: (data) =>
-    api.post('/transactions', data),
+    dataApi.post('/transactions', data),
 
   getToday: () =>
-    api.get('/transactions/today'),
+    dataApi.get('/transactions/today'),
 
   getByDate: (date) =>
-    api.get(`/transactions?date=${date}`),
+    dataApi.get(`/transactions?date=${date}`),
 
   getRange: (startDate, endDate) =>
-    api.get(`/transactions/range?start=${startDate}&end=${endDate}`),
+    dataApi.get(`/transactions/range?start=${startDate}&end=${endDate}`),
 
   update: (id, data) =>
-    api.put(`/transactions/${id}`, data),
+    dataApi.put(`/transactions/${id}`, data),
 
   delete: (id) =>
-    api.delete(`/transactions/${id}`),
+    dataApi.delete(`/transactions/${id}`),
 };
 
 // ---------- Dashboard APIs ----------
 export const dashboardAPI = {
   getToday: () =>
-    api.get('/dashboard/today'),
+    dataApi.get('/dashboard/today'),
 
   getWeekly: () =>
-    api.get('/dashboard/weekly'),
+    dataApi.get('/dashboard/weekly'),
 
   getUdhaar: () =>
-    api.get('/dashboard/udhaar'),
+    dataApi.get('/dashboard/udhaar'),
 
   getRecent: (limit = 5) =>
-    api.get(`/dashboard/recent?limit=${limit}`),
+    dataApi.get(`/dashboard/recent?limit=${limit}`),
 };
 
 // ---------- AI APIs ----------
 export const aiAPI = {
   parse: (rawInput, language = 'en') =>
-    api.post('/ai/parse', { rawInput, language }),
+    aiApiInstance.post('/parse', { rawInput, language }),
 
-  getDailySummary: (date) =>
-    api.post(`/ai/daily-summary`, { date }),
+  getDailySummary: (transactions, language = 'en', date = null) =>
+    aiApiInstance.post('/daily-summary', { transactions, language, date }),
 
-  getWeeklyInsight: (data) =>
-    api.post('/ai/weekly-insight', data),
+  getWeeklyInsight: (daily_summaries, language = 'en') =>
+    aiApiInstance.post('/weekly-insight', { daily_summaries, language }),
 };
 
-export default api;
+export default dataApi;

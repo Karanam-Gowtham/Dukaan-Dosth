@@ -25,7 +25,7 @@ public class User {
     @Pattern(regexp = "^[0-9]{10}$", message = "Phone number must be exactly 10 digits")
     private String phone;
 
-    @Column( nullable = false)
+    @Column(nullable = false)
     private String password;
 
     @Enumerated(EnumType.STRING)
@@ -35,5 +35,7 @@ public class User {
     private boolean isActive = true;
 
     @Column(nullable = false)
-    private String ShopName;
+    private String shopName;
+
+    private String languagePref;
 }

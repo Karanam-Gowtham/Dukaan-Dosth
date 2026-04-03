@@ -3,7 +3,7 @@ import { useTranslation } from 'react-i18next';
 import { aiAPI, transactionAPI } from '../../services/api';
 import { useToast } from '../../context/ToastContext';
 import VoiceRecorder from './VoiceRecorder';
-import { FiSend, FiCheck, FiX, FiEdit, FiMic, FiType, FiPlus } from 'react-icons/fi';
+import { FiSend, FiCheck, FiX, FiEdit, FiMic, FiType, FiPlus, FiZap } from 'react-icons/fi';
 import { useNavigate } from 'react-router-dom';
 
 export default function TransactionInput() {
@@ -21,8 +21,13 @@ export default function TransactionInput() {
     if (!textInput.trim()) return;
     setParsing(true);
     try {
-      const res = await aiAPI.parse(textInput, i18n.language);
-      setParsedData(res.data.parsed);
+      const lang = i18n.language === 'te' ? 'te' : 'en';
+      const res = await aiAPI.parse(textInput, lang);
+      if (res.data.success) {
+        setParsedData(res.data.parsed);
+      } else {
+        showToast(res.data.error || t('common.error'), 'error');
+      }
     } catch (err) {
       showToast(t('common.error'), 'error');
     } finally {
@@ -34,8 +39,13 @@ export default function TransactionInput() {
     setTextInput(transcript);
     setParsing(true);
     try {
-      const res = await aiAPI.parse(transcript, i18n.language);
-      setParsedData(res.data.parsed);
+      const lang = i18n.language === 'te' ? 'te' : 'en';
+      const res = await aiAPI.parse(transcript, lang);
+      if (res.data.success) {
+        setParsedData(res.data.parsed);
+      } else {
+        showToast(res.data.error || t('common.error'), 'error');
+      }
     } catch (err) {
       showToast(t('common.error'), 'error');
     } finally {
@@ -49,7 +59,7 @@ export default function TransactionInput() {
     try {
       await transactionAPI.create(parsedData);
       showToast(t('input.saved_success'), 'success');
-      navigate('/');
+      setTimeout(() => navigate('/'), 500);
     } catch (err) {
       showToast(t('common.error'), 'error');
     } finally {
@@ -62,141 +72,161 @@ export default function TransactionInput() {
       type,
       amount,
       description: desc,
-      category: 'general',
+      category: 'General',
       confidence: 1.0,
     });
   };
 
   return (
-    <div className="transaction-input-page page">
-      <header className="mb-6">
-        <h2 className="text-xl font-bold">{t('input.title')}</h2>
-        <p className="text-muted">{t('input.subtitle') || 'Speak or type your entry'}</p>
+    <div className="page container">
+      <header className="mb-8">
+        <h2 className="text-3xl font-extrabold text-gradient">{t('input.title')}</h2>
+        <p className="text-secondary">{t('input.subtitle') || 'Speak or type your entry'}</p>
       </header>
 
-      {/* Tab Selector */}
-      <div className="tab-bar mb-6">
-        <button 
-          className={`tab-item ${activeTab === 'voice' ? 'active' : ''}`}
-          onClick={() => setActiveTab('voice')}
-        >
-          <FiMic /> {t('input.voice_tab')}
-        </button>
-        <button 
-          className={`tab-item ${activeTab === 'text' ? 'active' : ''}`}
-          onClick={() => setActiveTab('text')}
-        >
-          <FiType /> {t('input.text_tab')}
-        </button>
-        <button 
-          className={`tab-item ${activeTab === 'quick' ? 'active' : ''}`}
-          onClick={() => setActiveTab('quick')}
-        >
-          <FiPlus /> {t('input.quick_tab')}
-        </button>
+      {/* Tab Selector - Premium Glass Bar */}
+      <div className="card-glass mb-8 p-1 flex gap-1" style={{ borderRadius: '1rem' }}>
+        {[
+          { id: 'voice', icon: <FiMic />, label: t('input.voice_tab') },
+          { id: 'text', icon: <FiType />, label: t('input.text_tab') },
+          { id: 'quick', icon: <FiPlus />, label: t('input.quick_tab') }
+        ].map(tab => (
+          <button 
+            key={tab.id}
+            className={`flex-1 flex items-center justify-center gap-2 py-3 rounded-lg font-bold transition-all ${activeTab === tab.id ? 'bg-primary text-white shadow-lg' : 'text-muted hover:text-white'}`}
+            onClick={() => { setActiveTab(tab.id); setParsedData(null); }}
+          >
+            {tab.icon} <span className="text-sm">{tab.label}</span>
+          </button>
+        ))}
       </div>
 
-      <div className="transaction-container">
+      <div className="mt-4">
         {/* Voice Tab */}
         {activeTab === 'voice' && !parsedData && (
-          <VoiceRecorder onResult={handleVoiceSuccess} isParsing={parsing} />
+          <div className="animate-in fade-in slide-in-from-bottom-4 transition-all duration-500">
+            <VoiceRecorder onResult={handleVoiceSuccess} isParsing={parsing} />
+          </div>
         )}
 
         {/* Text Tab */}
         {activeTab === 'text' && !parsedData && (
-          <div className="text-input-container card-glass">
-            <textarea 
-              className="input mb-4" 
-              rows="3" 
-              placeholder={t('input.text_placeholder')}
-              value={textInput}
-              onChange={(e) => setTextInput(e.target.value)}
-              disabled={parsing}
-            />
+          <div className="card-glass p-6 animate-in fade-in slide-in-from-bottom-4 transition-all duration-500">
+            <div className="input-group">
+              <label className="input-label">{t('input.text_label', 'What happened?')}</label>
+              <textarea 
+                className="input mb-6" 
+                rows="4" 
+                placeholder={t('input.text_placeholder')}
+                value={textInput}
+                onChange={(e) => setTextInput(e.target.value)}
+                style={{ resize: 'none', fontSize: '1.1rem' }}
+                disabled={parsing}
+              />
+            </div>
             <button 
-              className={`btn btn-primary btn-block ${parsing ? 'loading' : ''}`}
+              className="btn btn-primary"
               onClick={handleSendText}
               disabled={parsing || !textInput.trim()}
             >
-              <FiSend /> {t('input.send')}
+              {parsing ? <div className="loader-premium" style={{ width: '20px', height: '20px', borderWidth: '2px' }}></div> : <FiSend />}
+              {parsing ? t('common.analyzing', 'Analyzing...') : t('input.send')}
             </button>
           </div>
         )}
 
         {/* Quick Tab */}
         {activeTab === 'quick' && !parsedData && (
-          <div className="quick-actions grid-cols-2">
-            <button className="quick-btn" onClick={() => handleQuickAdd('SALE', 0, 'Sale')}>
-              <div className="quick-btn-icon text-success">💰</div>
-              <div className="quick-btn-label">{t('input.sale')}</div>
+          <div className="grid grid-cols-2 gap-4 animate-in fade-in slide-in-from-bottom-4 transition-all duration-500">
+            <button className="stat-card-premium success flex flex-col items-center gap-2 py-8" onClick={() => handleQuickAdd('SALE', 0, 'New Sale')}>
+              <div className="text-3xl">💰</div>
+              <div className="font-bold">{t('input.sale')}</div>
             </button>
-            <button className="quick-btn" onClick={() => handleQuickAdd('EXPENSE', 0, 'Expense')}>
-              <div className="quick-btn-icon text-danger">📉</div>
-              <div className="quick-btn-label">{t('input.expense')}</div>
+            <button className="stat-card-premium danger flex flex-col items-center gap-2 py-8" onClick={() => handleQuickAdd('EXPENSE', 0, 'New Expense')}>
+              <div className="text-3xl">🧾</div>
+              <div className="font-bold">{t('input.expense')}</div>
             </button>
-            <button className="quick-btn" onClick={() => handleQuickAdd('CREDIT_GIVEN', 0, 'Udhaar')}>
-              <div className="quick-btn-icon text-udhaar">🤝</div>
-              <div className="quick-btn-label">{t('input.udhaar_given')}</div>
+            <button className="stat-card-premium udhaar flex flex-col items-center gap-2 py-8" onClick={() => handleQuickAdd('CREDIT_GIVEN', 0, 'New Udhaar')}>
+              <div className="text-3xl">👤</div>
+              <div className="font-bold">{t('input.udhaar_given')}</div>
+            </button>
+            <button className="stat-card-premium flex flex-col items-center gap-2 py-8" onClick={() => handleQuickAdd('CREDIT_RECEIVED', 0, 'Udhaar Return')}>
+              <div className="text-3xl">📥</div>
+              <div className="font-bold">{t('input.udhaar_received')}</div>
             </button>
           </div>
         )}
 
-        {/* Confirmation Card (Shared by all tabs) */}
+        {/* Confirmation Card */}
         {parsedData && (
-          <div className="confirm-card">
-            <div className="confirm-card-header">
-              <span className={`badge badge-${parsedData.type.toLowerCase().replace('_', '-')}`}>
-                {t(`input.${parsedData.type.toLowerCase()}`)}
-              </span>
-              <div className="confirm-card-type">{t(`input.${parsedData.type.toLowerCase()}`)}</div>
-            </div>
-
-            <div className="confirm-amount">
-              ₹<input 
-                type="number" 
-                className="amount-edit-input" 
-                value={parsedData.amount}
-                onChange={(e) => setParsedData({...parsedData, amount: parseFloat(e.target.value) || 0})}
-              />
-            </div>
-
-            <div className="confirm-card-details">
-              <div className="confirm-row">
-                <span className="confirm-label">{t('input.description')}</span>
+          <div className="card-glass p-0 overflow-hidden animate-in zoom-in-95 duration-300">
+            <div className="bg-primary/10 p-6 border-b border-white/5">
+              <div className="flex items-center justify-between mb-2">
+                <span className={`px-3 py-1 rounded-full text-xs font-black uppercase tracking-wider ${
+                  parsedData.type === 'SALE' ? 'bg-success/20 text-success' : 
+                  parsedData.type === 'EXPENSE' ? 'bg-danger/20 text-danger' : 'bg-udhaar/20 text-udhaar'
+                }`}>
+                  {parsedData.type.replace('_', ' ')}
+                </span>
+                <div className="flex items-center gap-2 text-warning text-sm">
+                  <FiZap /> {Math.round(parsedData.confidence * 100)}% AI Accuracy
+                </div>
+              </div>
+              
+              <div className="mt-6 flex items-baseline justify-center gap-2">
+                <span className="text-4xl font-black text-white">₹</span>
                 <input 
-                  className="confirm-value-input" 
-                  value={parsedData.description}
-                  onChange={(e) => setParsedData({...parsedData, description: e.target.value})}
+                  type="number" 
+                  className="bg-transparent text-6xl font-black text-white w-full text-center outline-none border-b-2 border-primary/30 focus:border-primary transition-all" 
+                  value={parsedData.amount}
+                  autoFocus
+                  onChange={(e) => setParsedData({...parsedData, amount: parseFloat(e.target.value) || 0})}
                 />
               </div>
-              {parsedData.customer_name && (
-                <div className="confirm-row">
-                  <span className="confirm-label">{t('input.customer_name')}</span>
-                  <span className="confirm-value">{parsedData.customer_name}</span>
-                </div>
-              )}
-              {parsedData.clarification && (
-                <div className="ai-clarification mt-4 p-3 bg-warning-bg text-warning text-sm rounded-md">
-                  💡 {parsedData.clarification}
-                </div>
-              )}
             </div>
 
-            <div className="confirm-actions">
-              <button 
-                className="btn btn-outline" 
-                onClick={() => setParsedData(null)}
-                disabled={saving}
-              >
-                <FiX /> {t('input.confirm_cancel')}
-              </button>
-              <button 
-                className={`btn btn-primary ${saving ? 'loading' : ''}`} 
-                onClick={handleSave}
-                disabled={saving}
-              >
-                <FiCheck /> {t('input.confirm_save')}
-              </button>
+            <div className="p-6 space-y-6">
+              <div className="input-group">
+                <label className="input-label opacity-50">{t('input.description')}</label>
+                <input 
+                  className="input p-0 border-0 bg-transparent text-xl font-bold focus:shadow-none" 
+                  value={parsedData.description}
+                  onChange={(e) => setParsedData({...parsedData, description: e.target.value})}
+                  placeholder="What was this for?"
+                />
+              </div>
+
+              {parsedData.customer_name && (
+                <div className="flex items-center justify-between p-4 rounded-xl bg-white/5">
+                  <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 rounded-full bg-primary/20 flex items-center justify-center text-primary font-bold">
+                      {parsedData.customer_name[0]}
+                    </div>
+                    <div>
+                      <div className="text-xs text-muted">Customer / Name</div>
+                      <div className="font-bold">{parsedData.customer_name}</div>
+                    </div>
+                  </div>
+                  <FiEdit className="text-muted" />
+                </div>
+              )}
+
+              {parsedData.clarification && (
+                <div className="glass-panel text-warning text-sm flex gap-3">
+                  <FiZap className="flex-shrink-0" />
+                  <p>{parsedData.clarification}</p>
+                </div>
+              )}
+
+              <div className="flex gap-4 pt-4">
+                <button className="btn btn-outline flex-1" onClick={() => setParsedData(null)} disabled={saving}>
+                  <FiX /> {t('input.confirm_cancel')}
+                </button>
+                <button className={`btn btn-primary flex-1 ${saving ? 'loading' : ''}`} onClick={handleSave} disabled={saving}>
+                  {saving ? <div className="loader-premium" style={{ width: '20px', height: '20px', borderWidth: '2px' }}></div> : <FiCheck />}
+                  {t('input.confirm_save')}
+                </button>
+              </div>
             </div>
           </div>
         )}
