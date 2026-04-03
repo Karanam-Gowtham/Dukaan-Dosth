@@ -77,6 +77,9 @@ export const dashboardAPI = {
 
   getUdhaar: () =>
     api.get('/dashboard/udhaar'),
+
+  getRecent: (limit = 5) =>
+    api.get(`/dashboard/recent?limit=${limit}`),
 };
 
 // ---------- AI APIs ----------
@@ -85,10 +88,10 @@ export const aiAPI = {
     api.post('/ai/parse', { rawInput, language }),
 
   getDailySummary: (date) =>
-    api.get(`/ai/daily-summary?date=${date}`),
+    api.post(`/ai/daily-summary`, { date }),
 
-  getWeeklyInsight: () =>
-    api.get('/ai/weekly-insight'),
+  getWeeklyInsight: (data) =>
+    api.post('/ai/weekly-insight', data),
 };
 
 export default api;
