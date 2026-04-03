@@ -1,0 +1,93 @@
+{
+  "app_name": "Dukaan Dosth",
+  "app_tagline": "Your AI Business Companion",
+  "nav": {
+    "home": "Home",
+    "add": "Add",
+    "history": "History",
+    "charts": "Charts"
+  },
+  "auth": {
+    "login": "Login",
+    "register": "Register",
+    "phone": "Phone Number",
+    "password": "Password",
+    "confirm_password": "Confirm Password",
+    "owner_name": "Your Name",
+    "shop_name": "Shop Name",
+    "language": "Preferred Language",
+    "login_btn": "Login",
+    "register_btn": "Create Account",
+    "no_account": "Don't have an account?",
+    "has_account": "Already have an account?",
+    "logout": "Logout"
+  },
+  "dashboard": {
+    "greeting": "Hello",
+    "today_summary": "Today's Summary",
+    "total_sales": "Total Sales",
+    "total_expenses": "Total Expenses",
+    "net_profit": "Net Profit",
+    "net_loss": "Net Loss",
+    "pending_udhaar": "Pending Udhaar",
+    "recent": "Recent Transactions",
+    "no_transactions": "No transactions yet",
+    "no_transactions_desc": "Tap the + button to add your first sale or expense",
+    "generate_summary": "Generate AI Summary",
+    "ai_summary": "AI Daily Summary"
+  },
+  "input": {
+    "title": "Add Transaction",
+    "voice_tab": "Voice",
+    "text_tab": "Text",
+    "quick_tab": "Quick",
+    "voice_hint": "Tap the mic and speak your sale or expense",
+    "voice_hint_recording": "Listening... speak now",
+    "text_placeholder": "Type your sale or expense here...",
+    "text_example": "Example: Sold rice 500 to Ramesh",
+    "send": "Send",
+    "sale": "Sale",
+    "expense": "Expense",
+    "udhaar_given": "Udhaar Given",
+    "udhaar_received": "Udhaar Received",
+    "amount": "Amount (₹)",
+    "description": "Description",
+    "customer_name": "Customer Name",
+    "category": "Category",
+    "confirm_title": "Confirm Transaction",
+    "confirm_save": "Save",
+    "confirm_edit": "Edit",
+    "confirm_cancel": "Cancel",
+    "saved_success": "Transaction saved successfully!",
+    "parsing": "AI is understanding your input..."
+  },
+  "history": {
+    "title": "Transaction History",
+    "today": "Today",
+    "yesterday": "Yesterday",
+    "this_week": "This Week",
+    "filter": "Filter",
+    "all": "All",
+    "search": "Search transactions..."
+  },
+  "charts": {
+    "title": "Weekly Report",
+    "weekly_chart": "Profit / Loss (Last 7 Days)",
+    "best_day": "Best Day",
+    "worst_day": "Worst Day",
+    "avg_daily": "Daily Average",
+    "total_week": "Weekly Total",
+    "ai_insight": "AI Weekly Insight",
+    "generate_insight": "Generate AI Insight"
+  },
+  "common": {
+    "loading": "Loading...",
+    "error": "Something went wrong",
+    "retry": "Try Again",
+    "save": "Save",
+    "cancel": "Cancel",
+    "delete": "Delete",
+    "edit": "Edit",
+    "rupee": "₹"
+  }
+}
