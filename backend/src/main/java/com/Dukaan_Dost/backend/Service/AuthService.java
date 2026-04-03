@@ -2,12 +2,14 @@ package com.Dukaan_Dost.backend.Service;
 
 import com.Dukaan_Dost.backend.DTOs.LoginRequest;
 import com.Dukaan_Dost.backend.DTOs.RegisterRequest;
+import com.Dukaan_Dost.backend.JwtService;
 import com.Dukaan_Dost.backend.Model.ROLEs;
 import com.Dukaan_Dost.backend.Model.User;
 import com.Dukaan_Dost.backend.Repos.UserRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
@@ -18,6 +20,8 @@ public class AuthService {
     private final UserRepository userRepository;
     private final PasswordEncoder passwordEncoder;
     private final AuthenticationManager authenticationManager;
+    private final JwtService jwtService;
+    private final UserDetailsService userDetailsService;
 
     // REGISTER
     public String register(RegisterRequest request) {
@@ -49,6 +53,8 @@ public class AuthService {
                 )
         );
 
-        return "Login successful"; // JWT later
+        // Generate and return a real JWT token
+        var userDetails = userDetailsService.loadUserByUsername(request.getPhone());
+        return jwtService.generateToken(userDetails);
     }
-}
+}
