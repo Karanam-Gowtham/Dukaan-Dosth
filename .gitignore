@@ -1,27 +1,30 @@
-# Environment Variables
-.env
-.env.local
-.env.*.local
-*.env
+# Frontend
+frontend/node_modules/
+frontend/dist/
+frontend/.env
 
-# Dependencies
-node_modules/
-dist/
-build/
-venv/
-.venv/
-env/
-__pycache__/
-*.pyc
+# Backend
+backend/target/
+backend/.env
+backend/*.jar
+backend/.mvn/wrapper/maven-wrapper.jar
+backend/!**/src/main/**/target/
+backend/!**/src/test/**/target/
 
-# IDEs
-.vscode/
+# AI Service
+ai-service/venv/
+ai-service/__pycache__/
+ai-service/.env
+
+# IDE
 .idea/
+.vscode/
+*.iml
+
+# OS
 .DS_Store
 Thumbs.db
 
-# Temp Files
-temp_files.txt
-temp_impl.md
-temp_prd.md
-temp_task.md
+# Environment
+.env
+*.env.local
