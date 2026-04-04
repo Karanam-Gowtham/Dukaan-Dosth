@@ -54,6 +54,7 @@ dukaan-dosth/
 *   **Node.js v24+** (LTS recommended)
 *   **Python 3.10+**
 *   **Google Gemini API Key** ([Get it here](https://aistudio.google.com/apikey))
+*   **Groq API Key** — required for the Spring Boot backend AI features ([Get it here](https://console.groq.com/keys))
 
 ### 2. AI Engine (FastAPI)
 ```bash
