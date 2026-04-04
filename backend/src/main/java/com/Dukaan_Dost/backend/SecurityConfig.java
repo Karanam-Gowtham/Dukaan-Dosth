@@ -69,9 +69,10 @@ public class SecurityConfig {
     @Bean
     public org.springframework.web.cors.CorsConfigurationSource corsConfigurationSource() {
         org.springframework.web.cors.CorsConfiguration configuration = new org.springframework.web.cors.CorsConfiguration();
-        // Local dev + LAN (phone on same Wi‑Fi): match typical private ranges and Vite ports
+        // Local dev + LAN + Vercel (HTTPS). Add your custom domain pattern here if needed.
         configuration.setAllowedOriginPatterns(java.util.List.of(
                 "http://localhost:*", "http://127.0.0.1:*",
+                "https://*.vercel.app",
                 "http://192.168.*:*",
                 "http://10.*:*",
                 "http://172.16.*:*", "http://172.17.*:*", "http://172.18.*:*", "http://172.19.*:*",
