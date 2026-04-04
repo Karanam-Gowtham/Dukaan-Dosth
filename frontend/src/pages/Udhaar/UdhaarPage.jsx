@@ -46,7 +46,7 @@ export default function UdhaarPage() {
       setPaymentModalOpen(false);
       setPaymentAmount(''); setPaymentNote(''); setPaymentUdhaarId(null);
       loadUdhaar();
-    } catch (err) {
+    } catch {
       toast.error('Failed to record payment');
       setLoading(false);
     }
@@ -58,9 +58,9 @@ export default function UdhaarPage() {
       setLoading(true);
       await api.post('/api/udhaar', {
         customerName: newCustName,
-        phoneNumber: newCustPhone,
-        amount: parseFloat(newUdhaarAmt),
-        description: newUdhaarDesc,
+        customerPhone: newCustPhone || '',
+        totalAmount: parseFloat(newUdhaarAmt),
+        description: newUdhaarDesc || '',
       });
       toast.success('Udhaar added successfully');
       setShowAddModal(false);

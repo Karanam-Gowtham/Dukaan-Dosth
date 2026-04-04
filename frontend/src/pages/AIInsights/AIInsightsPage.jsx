@@ -24,53 +24,61 @@ export default function AIInsightsPage() {
         api.get('/api/udhaar').catch(() => ({ data: { data: [] } }))
       ]);
 
+      const saleRows = sales.data.data || [];
+      const expRows = exp.data.data || [];
+      const invRows = inv.data.data || [];
+      const udhRows = udh.data.data || [];
       const payload = {
-        totalSales: sales.data.data.reduce((s, i) => s + i.amount, 0),
-        salesCount: sales.data.data.length,
-        totalExpenses: exp.data.data.reduce((s, i) => s + i.amount, 0),
-        expensesCount: exp.data.data.length,
-        lowStockItems: inv.data.data.filter(i => i.quantity < (i.minStockLevel || 10)).length,
-        pendingUdhaar: udh.data.data.reduce((s, i) => s + (i.amount - (i.amountPaid || 0)), 0),
-        customers: udh.data.data.length
+        totalSales: saleRows.reduce((s, i) => s + (Number(i.amount) || 0), 0),
+        salesCount: saleRows.length,
+        totalExpenses: expRows.reduce((s, i) => s + (Number(i.amount) || 0), 0),
+        expensesCount: expRows.length,
+        lowStockItems: invRows.filter(i => i.quantity < (i.minStockLevel || 10)).length,
+        pendingUdhaar: udhRows.reduce((s, i) => {
+          const p = i.pendingAmount != null ? Number(i.pendingAmount) : Math.max(0, Number(i.totalAmount || i.amount || 0) - Number(i.paidAmount || i.amountPaid || 0));
+          return s + p;
+        }, 0),
+        customers: udhRows.length
       };
       
       setDataPayload(payload);
       
       // Auto-trigger generation based on loaded data
-      triggerAIAnalysis(payload);
+      triggerAIAnalysis();
 
-    } catch (err) {
+    } catch {
       toast.error('Could not pull business telemetry for AI');
       setLoading(false);
     }
   };
 
-  const triggerAIAnalysis = async (payload) => {
+  const triggerAIAnalysis = async () => {
     setLoading(true);
     try {
       const res = await api.get('/api/summary/daily');
       if (res.data && res.data.data) {
         parseAIResponse(res.data.data);
       } else {
-        throw new Error("No data");
+        throw new Error('No data');
       }
     } catch {
-      toast.error("Failed to generate AI Insights. Is Groq configured?");
+      toast.error('Showing sample insights — check Groq API key if live AI fails.');
+      setInsightData({
+        summary:
+          'Your store has maintained a healthy 65% profit margin this month. Sales velocity has increased by 10% compared to previous weeks, indicating strong localized demand. However, operating expenses related to logistics are slowly trending upwards. We recommend adjusting transport pricing models to sustain margins long-term.',
+        insights: [
+          "Snacks category (specifically Lays and Namkeen) is moving 3x faster than average. Your current stock will deplete in 4 days at this rate.",
+          '30% of your Total Udhaar remains uncollected past 14 days, freezing ₹4,200 in working capital.',
+          'Basmati Rice is yielding the highest gross profit margin per unit across your entire inventory.',
+        ],
+        suggestions: [
+          "Increase purchase orders for 'Snacks' moving forward to capitalize on localized trending demand.",
+          'Send targeted SMS payment reminders for the 5 customers holding Udhaar dues older than 2 weeks.',
+          "Consider shifting supplier for 'Refined Oil' as wholesale cost prices have dropped locally, giving room to increase margins.",
+        ],
+      });
+    } finally {
       setLoading(false);
-        setInsightData({
-          summary: "Your store has maintained a healthy 65% profit margin this month. Sales velocity has increased by 10% compared to previous weeks, indicating strong localized demand. However, operating expenses related to logistics are slowly trending upwards. We recommend adjusting transport pricing models to sustain margins long-term.",
-          insights: [
-            "Snacks category (specifically Lays and Namkeen) is moving 3x faster than average. Your current stock will deplete in 4 days at this rate.",
-            "30% of your Total Udhaar remains uncollected past 14 days, freezing ₹4,200 in working capital.",
-            "Basmati Rice is yielding the highest gross profit margin per unit across your entire inventory."
-          ],
-          suggestions: [
-            "Increase purchase orders for 'Snacks' moving forward to capitalize on localized trending demand.",
-            "Send targeted SMS payment reminders for the 5 customers holding Udhaar dues older than 2 weeks.",
-            "Consider shifting supplier for 'Refined Oil' as wholesale cost prices have dropped locally, giving room to increase margins."
-          ]
-        });
-        setLoading(false);
     }
   };
 

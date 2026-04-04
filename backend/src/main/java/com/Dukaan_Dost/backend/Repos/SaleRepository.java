@@ -12,6 +12,8 @@ import java.util.List;
 @Repository
 public interface SaleRepository extends JpaRepository<Sale, Long> {
 
+    List<Sale> findByUserIdOrderByCreatedAtDesc(Long userId);
+
     List<Sale> findByUserIdAndDate(Long userId, LocalDate date);
 
     List<Sale> findByUserIdAndDateBetween(Long userId, LocalDate startDate, LocalDate endDate);

@@ -12,6 +12,8 @@ import java.util.List;
 @Repository
 public interface ExpenseRepository extends JpaRepository<Expense, Long> {
 
+    List<Expense> findByUserIdOrderByCreatedAtDesc(Long userId);
+
     List<Expense> findByUserIdAndDate(Long userId, LocalDate date);
 
     List<Expense> findByUserIdAndDateBetween(Long userId, LocalDate startDate, LocalDate endDate);

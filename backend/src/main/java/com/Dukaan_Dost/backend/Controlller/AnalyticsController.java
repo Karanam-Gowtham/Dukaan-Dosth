@@ -1,6 +1,7 @@
 package com.Dukaan_Dost.backend.Controlller;
 
 import com.Dukaan_Dost.backend.DTOs.ApiResponse;
+import com.Dukaan_Dost.backend.DTOs.BusinessHealthDTO;
 import com.Dukaan_Dost.backend.DTOs.WeeklyAnalyticsDTO;
 import com.Dukaan_Dost.backend.Service.AnalyticsService;
 import lombok.RequiredArgsConstructor;
@@ -38,5 +39,10 @@ public class AnalyticsController {
             @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate endDate) {
         WeeklyAnalyticsDTO analytics = analyticsService.getAnalyticsByDateRange(startDate, endDate);
         return ResponseEntity.ok(ApiResponse.success("Analytics for range", analytics));
+    }
+
+    @GetMapping("/health")
+    public ResponseEntity<ApiResponse<BusinessHealthDTO>> getBusinessHealth() {
+        return ResponseEntity.ok(ApiResponse.success("Business health", analyticsService.getBusinessHealth()));
     }
 }

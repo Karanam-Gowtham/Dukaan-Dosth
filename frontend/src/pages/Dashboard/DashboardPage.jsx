@@ -13,6 +13,7 @@ export default function DashboardPage() {
     pendingUdhaar: 0,
     lowStockItems: 0
   });
+  const [health, setHealth] = useState(null);
   const [recentActivities, setRecentActivities] = useState([]);
   const [lowStockList, setLowStockList] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -27,31 +28,36 @@ export default function DashboardPage() {
     setLoading(true);
     try {
       // Try to fetch real data
-      const [salesRes, expRes, udhaarRes, invRes] = await Promise.all([
+      const [salesRes, expRes, udhaarRes, invRes, healthRes] = await Promise.all([
         api.get('/api/sales').catch(() => ({ data: { data: [] } })),
         api.get('/api/expenses').catch(() => ({ data: { data: [] } })),
         api.get('/api/udhaar').catch(() => ({ data: { data: [] } })),
-        api.get('/api/inventory').catch(() => ({ data: { data: [] } }))
+        api.get('/api/inventory').catch(() => ({ data: { data: [] } })),
+        api.get('/api/analytics/health').catch(() => ({ data: { data: null } }))
       ]);
 
-      const sales = salesRes.data.data;
-      const expenses = expRes.data.data;
-      const udhaars = udhaarRes.data.data;
-      const inventory = invRes.data.data;
+      const sales = salesRes.data.data || [];
+      const expenses = expRes.data.data || [];
+      const udhaars = udhaarRes.data.data || [];
+      const inventory = invRes.data.data || [];
 
-      // Calculate stats based on today (simplified to just sum for demo)
-      const salesTotal = sales.reduce((sum, s) => sum + s.amount, 0);
-      const expTotal = expenses.reduce((sum, e) => sum + e.amount, 0);
-      const pendingTotal = udhaars.reduce((sum, u) => sum + (u.amount - (u.amountPaid || 0)), 0);
-      
+      const salesTotal = sales.reduce((sum, s) => sum + (Number(s.amount) || 0), 0);
+      const expTotal = expenses.reduce((sum, e) => sum + (Number(e.amount) || 0), 0);
+      const pendingTotal = udhaars.reduce((sum, u) => {
+        const p = u.pendingAmount != null ? Number(u.pendingAmount) : Math.max(0, Number(u.totalAmount || u.amount || 0) - Number(u.paidAmount || u.amountPaid || 0));
+        return sum + p;
+      }, 0);
+
       const lowStock = inventory.filter(i => i.quantity < (i.minStockLevel || 10));
 
       setStats({
-        salesToday: salesTotal || 12450, // fallback Demo data
-        expensesToday: expTotal || 3200,
-        pendingUdhaar: pendingTotal || 8500,
-        lowStockItems: lowStock.length || 12
+        salesToday: salesTotal,
+        expensesToday: expTotal,
+        pendingUdhaar: pendingTotal,
+        lowStockItems: lowStock.length
       });
+
+      setHealth(healthRes.data?.data || null);
 
       setLowStockList(lowStock.length > 0 ? lowStock.slice(0, 5) : [
         { id: 1, name: 'Aashirvaad Atta 5kg', quantity: 2, minStockLevel: 10 },
@@ -74,7 +80,7 @@ export default function DashboardPage() {
       
       setRecentActivities(acts);
 
-    } catch (error) {
+    } catch {
       toast.error('Could not load all dashboard data');
     } finally {
       setLoading(false);
@@ -179,7 +185,7 @@ export default function DashboardPage() {
               <div className="dash-panel">
                 <div className="panel-header">
                   <h3>Recent Activities</h3>
-                  <Link to="/expenses" className="btn-link">View Ledger</Link>
+                  <Link to="/ledger" className="btn-link">View Ledger</Link>
                 </div>
                 <div className="panel-body">
                   <div className="activity-list">
@@ -230,12 +236,31 @@ export default function DashboardPage() {
               </div>
             </div>
             
+            {health ? (
+              <div className="dash-panel mb-6 border-indigo-500/30 bg-indigo-500/5">
+                <div className="panel-header">
+                  <h3 className="flex items-center gap-2">Business pulse</h3>
+                  <span className="text-sm font-bold text-indigo-400">{health.label}</span>
+                </div>
+                <div className="panel-body">
+                  <div className="flex flex-wrap items-center gap-6">
+                    <div>
+                      <span className="text-xs text-muted uppercase font-bold tracking-wider">Health score</span>
+                      <p className="text-4xl font-display font-bold text-indigo-500">{health.score}</p>
+                    </div>
+                    <p className="text-sm text-dark flex-1 min-w-[200px]">{health.headline}</p>
+                    <Link to="/analytics" className="btn btn-outline btn-sm">See analytics</Link>
+                  </div>
+                </div>
+              </div>
+            ) : null}
+
             {/* AI INSIGHTS QUICK BANNER */}
             <div className="dash-ai-banner">
               <div className="ai-banner-icon">✨</div>
               <div className="ai-banner-text">
                 <h4>AI Smart Insights available!</h4>
-                <p>Your shop's profit grew by 12% this week. We found exactly what items are selling the fastest.</p>
+                <p>Get a plain-language summary of today&apos;s sales, costs, and next steps for your shop.</p>
               </div>
               <Link to="/ai-insights" className="btn btn-outline ml-auto bg-white">View Full Report</Link>
             </div>

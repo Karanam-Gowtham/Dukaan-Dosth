@@ -49,6 +49,7 @@ public class AuthService {
                 "token", token,
                 "userId", user.getId(),
                 "name", user.getName(),
+                "phone", user.getPhone(),
                 "shopName", user.getShopName(),
                 "message", "User registered successfully"
         );
@@ -73,6 +74,7 @@ public class AuthService {
                 "token", token,
                 "userId", user.getId(),
                 "name", user.getName(),
+                "phone", user.getPhone(),
                 "shopName", user.getShopName(),
                 "message", "Login successful"
         );

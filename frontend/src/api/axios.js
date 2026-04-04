@@ -1,6 +1,6 @@
 import axios from 'axios';
 
-const API_BASE = 'http://localhost:8080';
+const API_BASE = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8080';
 
 const api = axios.create({
   baseURL: API_BASE,
@@ -27,7 +27,10 @@ api.interceptors.response.use(
   (error) => {
     // If the request was to auth, do not force a redirect/reload, just pass the error
     const originalRequest = error.config;
-    if (originalRequest.url.includes('/auth/login') || originalRequest.url.includes('/auth/register')) {
+    const reqPath = String(originalRequest?.url || '');
+    const base = String(originalRequest?.baseURL || '');
+    const fullUrl = base + reqPath;
+    if (fullUrl.includes('/auth/login') || fullUrl.includes('/auth/register') || reqPath.includes('/auth/login') || reqPath.includes('/auth/register')) {
       return Promise.reject(error);
     }
 

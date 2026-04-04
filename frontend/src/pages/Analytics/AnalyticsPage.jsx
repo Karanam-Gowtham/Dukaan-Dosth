@@ -7,15 +7,87 @@ import api from '../../api/axios';
 import { useToast } from '../../context/ToastContext';
 import './Analytics.css';
 
+const COLORS = ['#3730a3', '#4f46e5', '#818cf8', '#c7d2fe', '#e0e7ff'];
+
 export default function AnalyticsPage() {
-  const [loading, setLoading] = useState(false);
+  const [loading, setLoading] = useState(true);
   const toast = useToast();
   const navigate = useNavigate();
+  const [topMetrics, setTopMetrics] = useState({
+    totalSales: 0,
+    salesGrow: 0,
+    totalExpenses: 0,
+    expGrow: 0,
+    grossProfit: 0,
+    gpGrow: 0,
+    netProfit: 0,
+    npGrow: 0,
+    profitMargin: 0,
+    pmGrow: 0,
+  });
+  const [trendData, setTrendData] = useState([]);
+  const [expenseBreakdown, setExpenseBreakdown] = useState([]);
 
   useEffect(() => {
-    // In a real app we would load dynamic data from the backend here.
-    // We are simulating an advanced backend response.
-    // setLoading(true); setTimeout(() => setLoading(false), 800);
+    let cancelled = false;
+    (async () => {
+      setLoading(true);
+      try {
+        const res = await api.get('/api/analytics/profit-loss');
+        const a = res.data?.data;
+        if (!a || cancelled) return;
+        const sales = Number(a.totalSales) || 0;
+        const exp = Number(a.totalExpenses) || 0;
+        const profit = Number(a.totalProfit) || 0;
+        const margin = sales > 0 ? Math.round((profit / sales) * 1000) / 10 : 0;
+        setTopMetrics({
+          totalSales: sales,
+          salesGrow: 0,
+          totalExpenses: exp,
+          expGrow: 0,
+          grossProfit: profit,
+          gpGrow: 0,
+          netProfit: profit,
+          npGrow: 0,
+          profitMargin: margin,
+          pmGrow: 0,
+        });
+        const trends = (a.dailyTrends || []).map((d, i) => {
+          const dt = d.date ? new Date(d.date) : null;
+          const label = dt
+            ? dt.toLocaleDateString('en-IN', { weekday: 'short', day: 'numeric' })
+            : `D${i + 1}`;
+          return {
+            name: label,
+            sales: Number(d.sales) || 0,
+            expenses: Number(d.expenses) || 0,
+            profit: Number(d.profit) || 0,
+          };
+        });
+        setTrendData(trends.length ? trends : [{ name: '—', sales: 0, expenses: 0, profit: 0 }]);
+
+        const ex = Number(a.totalExpenses) || 0;
+        if (ex > 0) {
+          setExpenseBreakdown([
+            { name: 'Tracked expenses', value: ex, color: COLORS[0] },
+            { name: 'Net margin', value: Math.max(0, Number(a.totalSales) - ex), color: COLORS[2] },
+          ]);
+        } else {
+          setExpenseBreakdown([
+            { name: 'Purchase', value: 1, color: COLORS[0] },
+            { name: 'Other', value: 1, color: COLORS[2] },
+          ]);
+        }
+      } catch {
+        if (!cancelled) toast.error('Could not load analytics');
+      } finally {
+        if (!cancelled) setLoading(false);
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const exportCSV = () => {
@@ -43,31 +115,6 @@ export default function AnalyticsPage() {
     document.body.removeChild(link);
     toast.success('Analytics Exported to CSV');
   };
-
-  // Mocked Data based on prompt specs for the rich UI
-  const topMetrics = {
-    totalSales: 48750, salesGrow: 12.5,
-    totalExpenses: 8920, expGrow: -2.4, // red indicator
-    grossProfit: 39830, gpGrow: 14.2,
-    netProfit: 30910, npGrow: 15.6,
-    profitMargin: 63.4, pmGrow: 2.1
-  };
-
-  const trendData = [
-    { name: 'Jan', sales: 32000, expenses: 7500, profit: 24500 },
-    { name: 'Feb', sales: 38000, expenses: 8200, profit: 29800 },
-    { name: 'Mar', sales: 35000, expenses: 7800, profit: 27200 },
-    { name: 'Apr', sales: 42000, expenses: 8500, profit: 33500 },
-    { name: 'May', sales: 48750, expenses: 8920, profit: 39830 },
-  ];
-
-  const expenseBreakdown = [
-    { name: 'Purchase', value: 4500, color: '#3730a3' },
-    { name: 'Rent', value: 2000, color: '#4f46e5' },
-    { name: 'Utilities', value: 800, color: '#818cf8' },
-    { name: 'Salaries', value: 1200, color: '#c7d2fe' },
-    { name: 'Other', value: 420, color: '#e0e7ff' }
-  ];
 
   const categorySales = [
     { name: 'Grains', sales: 15000 },
@@ -148,6 +195,7 @@ export default function AnalyticsPage() {
           <div>
             <h2>Data Analytics</h2>
             <p>Understand your business performance, profit & loss, and AI insights</p>
+            {loading ? <p className="text-sm text-blue mt-2 font-medium">Syncing last 7 days from your shop…</p> : null}
           </div>
         </div>
 
