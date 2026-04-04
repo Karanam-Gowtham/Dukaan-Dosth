@@ -1,14 +1,40 @@
 import "dotenv/config";
+import { existsSync, readFileSync } from "fs";
+import { parse } from "dotenv";
 import { defineConfig } from "prisma/config";
+import path from "path";
 
-// --- Universal Database Resolution ---
-// Prisma 7 requires the datasource URL in this config layer.
-// We support all common Vercel/Prisma/Neon naming conventions for zero-config onboarding.
-const DATABASE_URL = 
-  process.env["POSTGRES_PRISMA_URL"] || 
-  process.env["POSTGRES_URL"] || 
-  process.env["DATABASE_URL"] || 
-  process.env["PRISMA_DATABASE_URL"];
+// --- Enterprise Connection Management ---
+let envConfig = { ...process.env };
+
+const envFiles = [".env.development.local", ".env.local", ".env"];
+for (const file of envFiles) {
+  const envPath = path.resolve(process.cwd(), file);
+  if (existsSync(envPath)) {
+    const raw = readFileSync(envPath);
+    const parsed = parse(raw);
+    envConfig = { ...envConfig, ...parsed };
+  }
+}
+
+// Comprehensive Search for a valid PostgreSQL Direct URL
+// We explicitly EXCLUDE edge-proxy (db.prisma.io) and Turso (libsql://) links for db push stability.
+const possibleUrls = [
+  envConfig["STORAGE_POSTGRES_URL_NON_POOLING"],
+  envConfig["POSTGRES_URL_NON_POOLING"],
+  envConfig["DATABASE_URL_UNPOOLED"],
+  envConfig["STORAGE_POSTGRES_PRISMA_URL"],
+  envConfig["DATABASE_URL"],
+  envConfig["POSTGRES_URL"]
+];
+
+// Professional Sanitization: We filter for the correct protocol and strip problematic parameters
+const rawUrl = possibleUrls.find(url => 
+  url?.startsWith('postgresql://') || 
+  (url?.startsWith('postgres://') && !url.includes('db.prisma.io'))
+);
+
+const DATABASE_URL = rawUrl?.replace(/channel_binding=require&?/, "");
 
 export default defineConfig({
   schema: "prisma/schema.prisma",

@@ -3,9 +3,9 @@ import cors from 'cors';
 import helmet from 'helmet';
 import morgan from 'morgan';
 import dotenv from 'dotenv';
-import authRoutes from './routes/authRoutes.js';
-import transactionRoutes from './routes/transactionRoutes.js';
-import dashboardRoutes from './routes/dashboardRoutes.js';
+import authRoutes from './routes/authRoutes';
+import transactionRoutes from './routes/transactionRoutes';
+import dashboardRoutes from './routes/dashboardRoutes';
 
 // Load environment variables
 dotenv.config();

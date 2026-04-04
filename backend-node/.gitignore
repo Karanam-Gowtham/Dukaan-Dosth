@@ -25,3 +25,6 @@ node_modules/@prisma/client
 .idea/
 *.swp
 *.log
+
+.vercel
+.env*.local

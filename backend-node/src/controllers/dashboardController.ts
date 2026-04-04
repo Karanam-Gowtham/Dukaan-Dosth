@@ -1,6 +1,6 @@
 import { Response } from 'express';
-import { prisma } from '../lib/prisma.js';
-import { AuthRequest } from '../middleware/auth.js';
+import { prisma } from '../lib/prisma';
+import { AuthRequest } from '../middleware/auth';
 
 export const getTodaySummary = async (req: AuthRequest, res: Response) => {
   const userId = req.user?.id;
