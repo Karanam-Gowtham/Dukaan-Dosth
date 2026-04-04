@@ -1,5 +1,5 @@
 import { Routes, Route, Navigate } from 'react-router-dom';
-import Layout from './components/Layout/Layout';
+import MainLayout from './components/Layout/MainLayout';
 import { useAuth } from './context/AuthContext';
 import LoginPage from './components/Auth/LoginPage';
 import RegisterPage from './components/Auth/RegisterPage';
@@ -16,8 +16,8 @@ function ProtectedRoute({ children }) {
   
   if (loading) {
     return (
-      <div className="flex items-center justify-center min-h-screen">
-        <div className="loader"></div>
+      <div className="flex items-center justify-center min-h-screen bg-slate-950">
+        <div className="loader-premium"></div>
       </div>
     );
   }
@@ -26,7 +26,7 @@ function ProtectedRoute({ children }) {
     return <Navigate to="/login" replace />;
   }
   
-  return <Layout>{children}</Layout>;
+  return <MainLayout>{children}</MainLayout>;
 }
 
 /**
@@ -41,7 +41,8 @@ function PublicRoute({ children }) {
     return <Navigate to="/" replace />;
   }
   
-  return <Layout>{children}</Layout>;
+  // Public routes (Auth) don't use MainLayout (the dashboard sidebar)
+  return <>{children}</>;
 }
 
 export default function App() {
@@ -75,12 +76,24 @@ export default function App() {
         }
       />
       <Route
-        path="/add"
+         path="/dashboard"
+         element={
+           <ProtectedRoute>
+             <DashboardPage />
+           </ProtectedRoute>
+         }
+       />
+      <Route
+        path="/input"
         element={
           <ProtectedRoute>
             <TransactionInput />
           </ProtectedRoute>
         }
+      />
+      <Route
+        path="/add"
+        element={<Navigate to="/input" replace />}
       />
       <Route
         path="/history"
@@ -95,6 +108,17 @@ export default function App() {
         element={
           <ProtectedRoute>
             <WeeklyChart />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/udhaar"
+        element={
+          <ProtectedRoute>
+            <div className="page-wrapper container">
+              <h1 className="text-3xl font-display font-bold mb-4">Udhaar Management</h1>
+              <p className="text-slate-500 italic">This feature is coming soon in your next update!</p>
+            </div>
           </ProtectedRoute>
         }
       />

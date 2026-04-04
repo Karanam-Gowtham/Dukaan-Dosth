@@ -90,26 +90,6 @@ export default function DashboardPage() {
 
       {/* Summary Stat Cards */}
       <div className="stat-grid">
-        <div className="stat-card-premium success">
-          <div className="stat-label">{t('dashboard.total_sales')}</div>
-          <div className="stat-value text-success">
-            ₹{summary.todaySales?.toLocaleString() || 0}
-          </div>
-          <div className="mt-2 text-xs flex items-center gap-1 text-success">
-            <FiTrendingUp /> {t('dashboard.sales_growth', 'Healthy')}
-          </div>
-        </div>
-
-        <div className="stat-card-premium danger">
-          <div className="stat-label">{t('dashboard.total_expenses')}</div>
-          <div className="stat-value text-danger">
-            ₹{summary.todayExpenses?.toLocaleString() || 0}
-          </div>
-          <div className="mt-2 text-xs flex items-center gap-1 text-danger">
-            <FiTrendingDown /> {t('dashboard.expenses_check', 'Managed')}
-          </div>
-        </div>
-
         <div className="stat-card-premium">
           <div className="stat-label">{t('dashboard.net_profit')}</div>
           <div className="stat-value">

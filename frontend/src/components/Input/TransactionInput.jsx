@@ -1,236 +1,264 @@
-import React, { useState, useEffect } from 'react';
-import { useTranslation } from 'react-i18next';
-import { aiAPI, transactionAPI } from '../../services/api';
-import { useToast } from '../../context/ToastContext';
-import VoiceRecorder from './VoiceRecorder';
-import { FiSend, FiCheck, FiX, FiEdit, FiMic, FiType, FiPlus, FiZap } from 'react-icons/fi';
-import { useNavigate } from 'react-router-dom';
+import React, { useState, useEffect, useRef } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
+import { 
+  Plus, 
+  Mic, 
+  MicOff, 
+  CheckCircle2, 
+  XCircle, 
+  Loader2, 
+  Info,
+  DollarSign,
+  Tag,
+  FileText,
+  User,
+  ArrowRight
+} from 'lucide-react';
+import api from '../../services/api';
 
-export default function TransactionInput() {
-  const { t, i18n } = useTranslation();
-  const { showToast } = useToast();
-  const navigate = useNavigate();
-
-  const [activeTab, setActiveTab] = useState('voice'); // voice, text, quick
-  const [textInput, setTextInput] = useState('');
-  const [parsing, setParsing] = useState(false);
-  const [parsedData, setParsedData] = useState(null);
-  const [saving, setSaving] = useState(false);
-
-  const handleSendText = async () => {
-    if (!textInput.trim()) return;
-    setParsing(true);
-    try {
-      const lang = i18n.language === 'te' ? 'te' : 'en';
-      const res = await aiAPI.parse(textInput, lang);
-      if (res.data.success) {
-        setParsedData(res.data.parsed);
-      } else {
-        showToast(res.data.error || t('common.error'), 'error');
-      }
-    } catch (err) {
-      showToast(t('common.error'), 'error');
-    } finally {
-      setParsing(false);
-    }
-  };
-
-  const handleVoiceSuccess = async (transcript) => {
-    setTextInput(transcript);
-    setParsing(true);
-    try {
-      const lang = i18n.language === 'te' ? 'te' : 'en';
-      const res = await aiAPI.parse(transcript, lang);
-      if (res.data.success) {
-        setParsedData(res.data.parsed);
-      } else {
-        showToast(res.data.error || t('common.error'), 'error');
-      }
-    } catch (err) {
-      showToast(t('common.error'), 'error');
-    } finally {
-      setParsing(false);
-    }
-  };
-
-  const handleSave = async () => {
-    if (!parsedData) return;
-    setSaving(true);
-    try {
-      await transactionAPI.create(parsedData);
-      showToast(t('input.saved_success'), 'success');
-      setTimeout(() => navigate('/'), 500);
-    } catch (err) {
-      showToast(t('common.error'), 'error');
-    } finally {
-      setSaving(false);
-    }
-  };
-
-  const handleQuickAdd = (type, amount, desc) => {
-    setParsedData({
-      type,
-      amount,
-      description: desc,
-      category: 'General',
-      confidence: 1.0,
+const TransactionInput = () => {
+    const [mode, setMode] = useState('voice'); // voice | manual
+    const [isRecording, setIsRecording] = useState(false);
+    const [transcript, setTranscript] = useState("");
+    const [parsedData, setParsedData] = useState(null);
+    const [manualData, setManualData] = useState({
+        amount: "",
+        description: "",
+        type: "SALE",
+        category: "General",
+        customerName: ""
     });
-  };
+    const [loading, setLoading] = useState(false);
+    const [status, setStatus] = useState({ type: '', message: '' });
 
-  return (
-    <div className="page container">
-      <header className="mb-8">
-        <h2 className="text-3xl font-extrabold text-gradient">{t('input.title')}</h2>
-        <p className="text-secondary">{t('input.subtitle') || 'Speak or type your entry'}</p>
-      </header>
+    const recognitionRef = useRef(null);
 
-      {/* Tab Selector - Premium Glass Bar */}
-      <div className="card-glass mb-8 p-1 flex gap-1" style={{ borderRadius: '1rem' }}>
-        {[
-          { id: 'voice', icon: <FiMic />, label: t('input.voice_tab') },
-          { id: 'text', icon: <FiType />, label: t('input.text_tab') },
-          { id: 'quick', icon: <FiPlus />, label: t('input.quick_tab') }
-        ].map(tab => (
-          <button 
-            key={tab.id}
-            className={`flex-1 flex items-center justify-center gap-2 py-3 rounded-lg font-bold transition-all ${activeTab === tab.id ? 'bg-primary text-white shadow-lg' : 'text-muted hover:text-white'}`}
-            onClick={() => { setActiveTab(tab.id); setParsedData(null); }}
-          >
-            {tab.icon} <span className="text-sm">{tab.label}</span>
-          </button>
-        ))}
-      </div>
+    useEffect(() => {
+        if ('webkitSpeechRecognition' in window) {
+            const recognition = new window.webkitSpeechRecognition();
+            recognition.continuous = false;
+            recognition.interimResults = false;
+            recognition.lang = 'te-IN,en-IN';
 
-      <div className="mt-4">
-        {/* Voice Tab */}
-        {activeTab === 'voice' && !parsedData && (
-          <div className="animate-in fade-in slide-in-from-bottom-4 transition-all duration-500">
-            <VoiceRecorder onResult={handleVoiceSuccess} isParsing={parsing} />
-          </div>
-        )}
+            recognition.onresult = (event) => {
+                const result = event.results[0][0].transcript;
+                setTranscript(result);
+                handleAIParse(result);
+            };
 
-        {/* Text Tab */}
-        {activeTab === 'text' && !parsedData && (
-          <div className="card-glass p-6 animate-in fade-in slide-in-from-bottom-4 transition-all duration-500">
-            <div className="input-group">
-              <label className="input-label">{t('input.text_label', 'What happened?')}</label>
-              <textarea 
-                className="input mb-6" 
-                rows="4" 
-                placeholder={t('input.text_placeholder')}
-                value={textInput}
-                onChange={(e) => setTextInput(e.target.value)}
-                style={{ resize: 'none', fontSize: '1.1rem' }}
-                disabled={parsing}
-              />
-            </div>
-            <button 
-              className="btn btn-primary"
-              onClick={handleSendText}
-              disabled={parsing || !textInput.trim()}
-            >
-              {parsing ? <div className="loader-premium" style={{ width: '20px', height: '20px', borderWidth: '2px' }}></div> : <FiSend />}
-              {parsing ? t('common.analyzing', 'Analyzing...') : t('input.send')}
-            </button>
-          </div>
-        )}
+            recognition.onend = () => setIsRecording(false);
+            recognitionRef.current = recognition;
+        }
+    }, []);
 
-        {/* Quick Tab */}
-        {activeTab === 'quick' && !parsedData && (
-          <div className="grid grid-cols-2 gap-4 animate-in fade-in slide-in-from-bottom-4 transition-all duration-500">
-            <button className="stat-card-premium success flex flex-col items-center gap-2 py-8" onClick={() => handleQuickAdd('SALE', 0, 'New Sale')}>
-              <div className="text-3xl">💰</div>
-              <div className="font-bold">{t('input.sale')}</div>
-            </button>
-            <button className="stat-card-premium danger flex flex-col items-center gap-2 py-8" onClick={() => handleQuickAdd('EXPENSE', 0, 'New Expense')}>
-              <div className="text-3xl">🧾</div>
-              <div className="font-bold">{t('input.expense')}</div>
-            </button>
-            <button className="stat-card-premium udhaar flex flex-col items-center gap-2 py-8" onClick={() => handleQuickAdd('CREDIT_GIVEN', 0, 'New Udhaar')}>
-              <div className="text-3xl">👤</div>
-              <div className="font-bold">{t('input.udhaar_given')}</div>
-            </button>
-            <button className="stat-card-premium flex flex-col items-center gap-2 py-8" onClick={() => handleQuickAdd('CREDIT_RECEIVED', 0, 'Udhaar Return')}>
-              <div className="text-3xl">📥</div>
-              <div className="font-bold">{t('input.udhaar_received')}</div>
-            </button>
-          </div>
-        )}
+    const toggleRecording = () => {
+        if (isRecording) {
+            recognitionRef.current?.stop();
+        } else {
+            setTranscript("");
+            setParsedData(null);
+            recognitionRef.current?.start();
+            setIsRecording(true);
+        }
+    };
 
-        {/* Confirmation Card */}
-        {parsedData && (
-          <div className="card-glass p-0 overflow-hidden animate-in zoom-in-95 duration-300">
-            <div className="bg-primary/10 p-6 border-b border-white/5">
-              <div className="flex items-center justify-between mb-2">
-                <span className={`px-3 py-1 rounded-full text-xs font-black uppercase tracking-wider ${
-                  parsedData.type === 'SALE' ? 'bg-success/20 text-success' : 
-                  parsedData.type === 'EXPENSE' ? 'bg-danger/20 text-danger' : 'bg-udhaar/20 text-udhaar'
-                }`}>
-                  {parsedData.type.replace('_', ' ')}
-                </span>
-                <div className="flex items-center gap-2 text-warning text-sm">
-                  <FiZap /> {Math.round(parsedData.confidence * 100)}% AI Accuracy
-                </div>
-              </div>
-              
-              <div className="mt-6 flex items-baseline justify-center gap-2">
-                <span className="text-4xl font-black text-white">₹</span>
-                <input 
-                  type="number" 
-                  className="bg-transparent text-6xl font-black text-white w-full text-center outline-none border-b-2 border-primary/30 focus:border-primary transition-all" 
-                  value={parsedData.amount}
-                  autoFocus
-                  onChange={(e) => setParsedData({...parsedData, amount: parseFloat(e.target.value) || 0})}
-                />
-              </div>
+    const handleAIParse = async (text) => {
+        setLoading(true);
+        try {
+            const res = await api.ai.parseTransaction(text);
+            setParsedData(res.data.parsed);
+        } catch (err) {
+            setStatus({ type: 'error', message: 'Failed to parse speech.' });
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    const handleConfirm = async () => {
+        setLoading(true);
+        try {
+            await api.transactions.create(parsedData || manualData);
+            setStatus({ type: 'success', message: 'Transaction recorded successfully!' });
+            setTimeout(() => setStatus({ type: '', message: '' }), 3000);
+            setParsedData(null);
+            setTranscript("");
+            setManualData({ amount: "", description: "", type: "SALE", category: "General", customerName: "" });
+        } catch (err) {
+            setStatus({ type: 'error', message: 'Failed to record transaction.' });
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    return (
+        <div className="page-wrapper container app-container">
+            <div className="mb-8 p-6 lg:p-0">
+                <h1 className="text-3xl font-display font-bold mb-2">New Transaction</h1>
+                <p className="text-slate-400 text-sm font-medium">Record a sale, expense, or udhaar.</p>
             </div>
 
-            <div className="p-6 space-y-6">
-              <div className="input-group">
-                <label className="input-label opacity-50">{t('input.description')}</label>
-                <input 
-                  className="input p-0 border-0 bg-transparent text-xl font-bold focus:shadow-none" 
-                  value={parsedData.description}
-                  onChange={(e) => setParsedData({...parsedData, description: e.target.value})}
-                  placeholder="What was this for?"
-                />
-              </div>
-
-              {parsedData.customer_name && (
-                <div className="flex items-center justify-between p-4 rounded-xl bg-white/5">
-                  <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 rounded-full bg-primary/20 flex items-center justify-center text-primary font-bold">
-                      {parsedData.customer_name[0]}
-                    </div>
-                    <div>
-                      <div className="text-xs text-muted">Customer / Name</div>
-                      <div className="font-bold">{parsedData.customer_name}</div>
-                    </div>
-                  </div>
-                  <FiEdit className="text-muted" />
-                </div>
-              )}
-
-              {parsedData.clarification && (
-                <div className="glass-panel text-warning text-sm flex gap-3">
-                  <FiZap className="flex-shrink-0" />
-                  <p>{parsedData.clarification}</p>
-                </div>
-              )}
-
-              <div className="flex gap-4 pt-4">
-                <button className="btn btn-outline flex-1" onClick={() => setParsedData(null)} disabled={saving}>
-                  <FiX /> {t('input.confirm_cancel')}
+            {/* Mode Switcher */}
+            <div className="mx-6 lg:mx-0 flex bg-slate-900/50 p-1 rounded-xl mb-8 border border-slate-800">
+                <button 
+                    onClick={() => setMode('voice')}
+                    className={`flex-1 flex items-center justify-center gap-2 py-2 text-sm font-bold rounded-lg transition-all ${mode === 'voice' ? 'bg-indigo-600 text-white shadow-lg' : 'text-slate-500'}`}
+                >
+                    <Mic size={16} /> AI Voice
                 </button>
-                <button className={`btn btn-primary flex-1 ${saving ? 'loading' : ''}`} onClick={handleSave} disabled={saving}>
-                  {saving ? <div className="loader-premium" style={{ width: '20px', height: '20px', borderWidth: '2px' }}></div> : <FiCheck />}
-                  {t('input.confirm_save')}
+                <button 
+                    onClick={() => setMode('manual')}
+                    className={`flex-1 flex items-center justify-center gap-2 py-2 text-sm font-bold rounded-lg transition-all ${mode === 'manual' ? 'bg-indigo-600 text-white shadow-lg' : 'text-slate-500'}`}
+                >
+                    <FileText size={16} /> Manual
                 </button>
-              </div>
             </div>
-          </div>
-        )}
-      </div>
-    </div>
-  );
-}
+
+            {/* Content Area */}
+            <div className="px-6 lg:px-0 pb-10">
+                <AnimatePresence mode="wait">
+                    {mode === 'voice' ? (
+                        <motion.div 
+                            key="voice"
+                            initial={{ opacity: 0, y: 10 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            exit={{ opacity: 0, y: -10 }}
+                            className="space-y-8"
+                        >
+                            <div className="flex flex-col items-center">
+                                <div className="relative">
+                                    {isRecording && (
+                                        <motion.div 
+                                            animate={{ scale: [1, 1.4, 1] }}
+                                            transition={{ repeat: Infinity, duration: 2 }}
+                                            className="absolute inset-0 bg-indigo-600/20 rounded-full blur-2xl"
+                                        />
+                                    )}
+                                    <button 
+                                        onClick={toggleRecording}
+                                        className={`w-24 h-24 rounded-full flex items-center justify-center transition-all ${isRecording ? 'bg-rose-500 shadow-rose-500/30' : 'bg-indigo-600 shadow-indigo-600/30'} shadow-2xl relative z-10`}
+                                    >
+                                        {isRecording ? <MicOff size={32} /> : <Mic size={32} />}
+                                    </button>
+                                </div>
+                                <p className="mt-6 text-sm font-bold text-slate-400 tracking-wide uppercase">
+                                    {isRecording ? "Listening..." : "Tap to speak in Telugu or English"}
+                                </p>
+                            </div>
+
+                            {transcript && (
+                               <div className="card border-slate-800/50 bg-slate-900/40 italic text-slate-300 py-4 px-6 text-center">
+                                    "{transcript}"
+                               </div>
+                            )}
+
+                            {loading && !parsedData && (
+                                <div className="flex flex-col items-center gap-3 py-4">
+                                    <Loader2 className="animate-spin text-indigo-500" size={32} />
+                                    <p className="text-xs font-bold text-slate-500 uppercase tracking-widest">Processing Transaction...</p>
+                                </div>
+                            )}
+
+                            {parsedData && (
+                                <motion.div 
+                                    initial={{ opacity: 0, scale: 0.95 }}
+                                    animate={{ opacity: 1, scale: 1 }}
+                                    className="card border-indigo-500/30 bg-indigo-500/5 shadow-xl"
+                                >
+                                    <div className="flex items-center gap-3 mb-6 border-b border-indigo-500/20 pb-4">
+                                        <CheckCircle2 size={24} className="text-emerald-500" />
+                                        <h3 className="text-lg font-bold">Transaction Decoded</h3>
+                                    </div>
+                                    <div className="grid grid-cols-2 gap-4 mb-6">
+                                        <div className="stat-widget">
+                                            <span className="stat-label">Amount</span>
+                                            <p className="text-xl font-bold text-white">₹{parsedData.amount}</p>
+                                        </div>
+                                        <div className="stat-widget">
+                                            <span className="stat-label">Type</span>
+                                            <p className="text-xl font-bold text-indigo-400 uppercase text-xs">{parsedData.type}</p>
+                                        </div>
+                                        <div className="stat-widget col-span-2">
+                                            <span className="stat-label">Description</span>
+                                            <p className="text-sm font-medium text-slate-200">{parsedData.description}</p>
+                                        </div>
+                                    </div>
+                                    <button onClick={handleConfirm} className="btn btn-primary w-full" disabled={loading}>
+                                        {loading ? "Confirming..." : "Confirm & Save"} <ArrowRight size={18} className="ml-2" />
+                                    </button>
+                                </motion.div>
+                            )}
+                        </motion.div>
+                    ) : (
+                        <motion.div 
+                            key="manual"
+                            initial={{ opacity: 0, y: 10 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            exit={{ opacity: 0, y: -10 }}
+                            className="card shadow-xl space-y-5"
+                        >
+                            <div className="form-group">
+                                <label className="label">Amount (₹)</label>
+                                <input 
+                                    type="number" 
+                                    className="input-pro text-2xl font-display font-bold text-emerald-500" 
+                                    placeholder="0.00"
+                                    value={manualData.amount}
+                                    onChange={(e) => setManualData({...manualData, amount: e.target.value})}
+                                />
+                            </div>
+                            <div className="form-group">
+                                <label className="label">Description</label>
+                                <input 
+                                    className="input-pro" 
+                                    placeholder="e.g. Sales of Rice"
+                                    value={manualData.description}
+                                    onChange={(e) => setManualData({...manualData, description: e.target.value})}
+                                />
+                            </div>
+                            <div className="grid grid-cols-2 gap-4">
+                                <div className="form-group">
+                                    <label className="label">Type</label>
+                                    <select 
+                                        className="input-pro text-sm"
+                                        value={manualData.type}
+                                        onChange={(e) => setManualData({...manualData, type: e.target.value})}
+                                    >
+                                        <option value="SALE">Sale (+)</option>
+                                        <option value="EXPENSE">Expense (-)</option>
+                                        <option value="CREDIT_GIVEN">Credit Given</option>
+                                        <option value="CREDIT_RECEIVED">Credit Recvd</option>
+                                    </select>
+                                </div>
+                                <div className="form-group">
+                                    <label className="label">Category</label>
+                                    <input 
+                                        className="input-pro text-sm" 
+                                        placeholder="General"
+                                        value={manualData.category}
+                                        onChange={(e) => setManualData({...manualData, category: e.target.value})}
+                                    />
+                                </div>
+                            </div>
+                            <button onClick={handleConfirm} className="btn btn-primary w-full h-12" disabled={loading}>
+                                {loading ? "Recording..." : "Save Transaction"}
+                            </button>
+                        </motion.div>
+                    )}
+                </AnimatePresence>
+            </div>
+
+            {status.message && (
+               <motion.div 
+                initial={{ opacity: 0, y: 50 }}
+                animate={{ opacity: 1, y: 0 }}
+                className={`fixed bottom-24 left-4 right-4 p-4 rounded-xl shadow-2xl flex items-center gap-3 z-50 ${status.type === 'error' ? 'bg-rose-600' : 'bg-emerald-600'}`}
+               >
+                 {status.type === 'success' ? <CheckCircle2 /> : <XCircle />}
+                 <span className="font-bold">{status.message}</span>
+               </motion.div>
+            )}
+        </div>
+    );
+};
+
+export default TransactionInput;
