@@ -1,6 +1,7 @@
 package com.Dukaan_Dost.backend.Exception;
 
 import com.Dukaan_Dost.backend.DTOs.ApiResponse;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.AuthenticationException;
@@ -53,6 +54,17 @@ public class GlobalExceptionHandler {
     public ResponseEntity<ApiResponse<Void>> handleAuth(AuthenticationException ex) {
         return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
                 .body(ApiResponse.error("Invalid phone number or password"));
+    }
+
+    @ExceptionHandler(DataIntegrityViolationException.class)
+    public ResponseEntity<ApiResponse<Void>> handleDataIntegrity(DataIntegrityViolationException ex) {
+        String msg = ex.getMostSpecificCause() != null ? ex.getMostSpecificCause().getMessage() : ex.getMessage();
+        if (msg != null && msg.toLowerCase().contains("phone")) {
+            return ResponseEntity.status(HttpStatus.CONFLICT)
+                    .body(ApiResponse.error("User with this phone number already exists"));
+        }
+        return ResponseEntity.status(HttpStatus.CONFLICT)
+                .body(ApiResponse.error("This record conflicts with existing data"));
     }
 
     @ExceptionHandler(RuntimeException.class)

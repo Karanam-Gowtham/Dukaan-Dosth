@@ -12,7 +12,9 @@ import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
+import java.util.LinkedHashMap;
 import java.util.Map;
 
 @Service
@@ -25,6 +27,7 @@ public class AuthService {
     private final JwtService jwtService;
 
     // ✅ REGISTER
+    @Transactional
     public Map<String, Object> register(RegisterRequest request) {
 
         if (userRepository.existsByPhone(request.getPhone())) {
@@ -40,22 +43,18 @@ public class AuthService {
                 .isActive(true)
                 .build();
 
-        userRepository.save(user);
+        User saved = userRepository.saveAndFlush(user);
+        Long id = saved.getId();
+        if (id == null) {
+            throw new IllegalStateException("User was not assigned an id after save");
+        }
 
-        // Generate JWT token on registration too
-        String token = jwtService.generateToken(user.getPhone(), user.getId());
-
-        return Map.of(
-                "token", token,
-                "userId", user.getId(),
-                "name", user.getName(),
-                "phone", user.getPhone(),
-                "shopName", user.getShopName(),
-                "message", "User registered successfully"
-        );
+        String token = jwtService.generateToken(saved.getPhone(), id);
+        return authPayload(token, saved, "User registered successfully");
     }
 
     // ✅ LOGIN - now returns JWT token
+    @Transactional(readOnly = true)
     public Map<String, Object> login(LoginRequest request) {
 
         authenticationManager.authenticate(
@@ -66,17 +65,25 @@ public class AuthService {
         );
 
         User user = userRepository.findByPhone(request.getPhone())
-                .orElseThrow(() -> new RuntimeException("User not found"));
+                .orElseThrow(() -> new IllegalStateException("Authenticated user missing from database"));
 
-        String token = jwtService.generateToken(user.getPhone(), user.getId());
+        Long id = user.getId();
+        if (id == null) {
+            throw new IllegalStateException("User record has no id");
+        }
 
-        return Map.of(
-                "token", token,
-                "userId", user.getId(),
-                "name", user.getName(),
-                "phone", user.getPhone(),
-                "shopName", user.getShopName(),
-                "message", "Login successful"
-        );
+        String token = jwtService.generateToken(user.getPhone(), id);
+        return authPayload(token, user, "Login successful");
+    }
+
+    private static Map<String, Object> authPayload(String token, User user, String message) {
+        Map<String, Object> m = new LinkedHashMap<>();
+        m.put("token", token);
+        m.put("userId", user.getId());
+        m.put("name", user.getName());
+        m.put("phone", user.getPhone());
+        m.put("shopName", user.getShopName());
+        m.put("message", message);
+        return m;
     }
 }
