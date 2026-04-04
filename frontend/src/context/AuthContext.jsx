@@ -1,75 +1,59 @@
 import { createContext, useContext, useState, useEffect } from 'react';
-import { authAPI } from '../services/api';
+import api from '../api/axios';
 
 const AuthContext = createContext(null);
 
-export function AuthProvider({ children }) {
-  const [user, setUser] = useState(() => {
-    const saved = localStorage.getItem('user');
-    return saved ? JSON.parse(saved) : { id: 1, name: 'Demo User', phone: '9999999999', shop_name: 'Super Market', languagePref: 'en' };
-  });
-  const [token, setToken] = useState(() => localStorage.getItem('token') || 'bypass-token');
-  const [loading, setLoading] = useState(false);
+export const useAuth = () => useContext(AuthContext);
 
-  const isAuthenticated = true; // Always authenticated
+export function AuthProvider({ children }) {
+  const [user, setUser] = useState(null);
+  const [token, setToken] = useState(null);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const savedToken = localStorage.getItem('dd_token');
+    const savedUser = localStorage.getItem('dd_user');
+    if (savedToken && savedUser) {
+      setToken(savedToken);
+      setUser(JSON.parse(savedUser));
+    }
+    setLoading(false);
+  }, []);
 
   const login = async (phone, password) => {
-    localStorage.setItem('token', 'bypass-token');
-    localStorage.setItem('user', JSON.stringify({ id: 1, name: 'Demo User', phone, shop_name: 'Demo Shop', languagePref: 'en' }));
-    setToken('bypass-token');
-    setUser({ id: 1, name: 'Demo User', phone, shop_name: 'Demo Shop', languagePref: 'en' });
-    return { success: true };
+    const res = await api.post('/auth/login', { phone, password });
+    const data = res.data.data;
+    const jwt = data.token;
+    const userInfo = { name: data.name, phone: data.phone, shopName: data.shopName };
+    localStorage.setItem('dd_token', jwt);
+    localStorage.setItem('dd_user', JSON.stringify(userInfo));
+    setToken(jwt);
+    setUser(userInfo);
+    return userInfo;
   };
 
-  const register = async (data) => {
-    localStorage.setItem('token', 'bypass-token');
-    localStorage.setItem('user', JSON.stringify({ id: 1, ...data, languagePref: 'en' }));
-    setToken('bypass-token');
-    setUser({ id: 1, ...data, languagePref: 'en' });
-    return { success: true };
+  const register = async (name, phone, password, shopName) => {
+    const res = await api.post('/auth/register', { name, phone, password, shopName });
+    const data = res.data.data;
+    const jwt = data.token;
+    const userInfo = { name: data.name, phone: data.phone, shopName: data.shopName };
+    localStorage.setItem('dd_token', jwt);
+    localStorage.setItem('dd_user', JSON.stringify(userInfo));
+    setToken(jwt);
+    setUser(userInfo);
+    return userInfo;
   };
 
   const logout = () => {
-    localStorage.removeItem('token');
-    localStorage.removeItem('user');
+    localStorage.removeItem('dd_token');
+    localStorage.removeItem('dd_user');
     setToken(null);
     setUser(null);
-    // Even if logged out temporarily, next refresh will log them right back in!
-  };
-
-  const updateLanguage = (lang) => {
-    if (user) {
-      const updated = { ...user, languagePref: lang };
-      setUser(updated);
-      localStorage.setItem('user', JSON.stringify(updated));
-    }
-    localStorage.setItem('lang', lang);
   };
 
   return (
-    <AuthContext.Provider
-      value={{
-        user,
-        token,
-        loading,
-        isAuthenticated,
-        login,
-        register,
-        logout,
-        updateLanguage,
-      }}
-    >
+    <AuthContext.Provider value={{ user, token, loading, login, register, logout, isAuthenticated: !!token }}>
       {children}
     </AuthContext.Provider>
   );
 }
-
-export function useAuth() {
-  const context = useContext(AuthContext);
-  if (!context) {
-    throw new Error('useAuth must be used within an AuthProvider');
-  }
-  return context;
-}
-
-export default AuthContext;
