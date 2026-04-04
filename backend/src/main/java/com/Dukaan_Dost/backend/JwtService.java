@@ -27,16 +27,41 @@ public class JwtService {
         if (raw == null || raw.isBlank()) {
             raw = "change-me-to-a-long-random-secret-for-local-dev-only";
         }
+        raw = raw.trim();
+        // Plain-text secrets (e.g. UUIDs, phrases with "-") are NOT Base64 — hashing avoids
+        // "Illegal base64 character" from jjwt when JWT_SECRET is a normal random string.
         byte[] keyBytes;
-        try {
-            keyBytes = Decoders.BASE64.decode(raw);
-            if (keyBytes.length < 32) {
+        if (looksLikeStandardBase64(raw)) {
+            try {
+                byte[] decoded = Decoders.BASE64.decode(raw);
+                keyBytes = decoded.length >= 32 ? decoded : sha256Bytes(raw);
+            } catch (RuntimeException e) {
                 keyBytes = sha256Bytes(raw);
             }
-        } catch (IllegalArgumentException e) {
+        } else {
             keyBytes = sha256Bytes(raw);
         }
         return Keys.hmacShaKeyFor(keyBytes);
+    }
+
+    /** Standard Base64 alphabet only (+ / = padding). Hyphens, spaces, etc. => false. */
+    private static boolean looksLikeStandardBase64(String s) {
+        if (s.length() < 8) {
+            return false;
+        }
+        for (int i = 0; i < s.length(); i++) {
+            char c = s.charAt(i);
+            boolean ok = (c >= 'A' && c <= 'Z')
+                    || (c >= 'a' && c <= 'z')
+                    || (c >= '0' && c <= '9')
+                    || c == '+'
+                    || c == '/'
+                    || c == '=';
+            if (!ok) {
+                return false;
+            }
+        }
+        return true;
     }
 
     private static byte[] sha256Bytes(String s) {
