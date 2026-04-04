@@ -5,6 +5,8 @@ import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Pattern;
 import lombok.*;
 
+import java.time.LocalDateTime;
+
 @Entity
 @Table(name = "users")
 @Getter
@@ -29,13 +31,18 @@ public class User {
     private String password;
 
     @Enumerated(EnumType.STRING)
-    private ROLEs role; // USER / ADMIN
-
-    @Builder.Default
-    private boolean isActive = true;
+    private ROLEs role;
 
     @Column(nullable = false)
     private String shopName;
 
-    private String languagePref;
+    @Builder.Default
+    private boolean isActive = true;
+
+    @Builder.Default
+    private String preferredLanguage = "te"; // te=Telugu, en=English
+
+    @Column(updatable = false)
+    @Builder.Default
+    private LocalDateTime createdAt = LocalDateTime.now();
 }
