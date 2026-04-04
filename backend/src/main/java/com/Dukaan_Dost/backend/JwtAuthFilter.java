@@ -7,7 +7,9 @@ import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+import io.jsonwebtoken.JwtException;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.core.userdetails.UserDetails;
@@ -17,6 +19,7 @@ import org.springframework.web.filter.OncePerRequestFilter;
 
 
 @RequiredArgsConstructor
+@Slf4j
 public class JwtAuthFilter extends OncePerRequestFilter {
 
     private final JwtService jwtService; // DI
@@ -38,32 +41,38 @@ public class JwtAuthFilter extends OncePerRequestFilter {
 
         // ✅ 2. Extract token
         String jwt = authHeader.substring(7);
-        String userPhone = jwtService.extractUsername(jwt);
+        String userPhone;
+        try {
+            userPhone = jwtService.extractUsername(jwt);
+        } catch (JwtException | IllegalArgumentException e) {
+            log.debug("Invalid JWT: {}", e.getMessage());
+            filterChain.doFilter(request, response);
+            return;
+        }
 
         // ✅ 3. Check if already authenticated
         if (userPhone != null && SecurityContextHolder.getContext().getAuthentication() == null) {
+            try {
+                UserDetails userDetails = userDetailsService.loadUserByUsername(userPhone);
 
-            UserDetails userDetails = userDetailsService.loadUserByUsername(userPhone);
+                // ✅ 4. Validate token
+                if (jwtService.isTokenValid(jwt, userDetails)) {
 
-            // ✅ 4. Validate token
-            if (jwtService.isTokenValid(jwt, userDetails)) {
+                    UsernamePasswordAuthenticationToken authToken =
+                            new UsernamePasswordAuthenticationToken(
+                                    userDetails,
+                                    null,
+                                    userDetails.getAuthorities()
+                            );
 
-                UsernamePasswordAuthenticationToken authToken =
-                        new UsernamePasswordAuthenticationToken(
-                                userDetails,
-                                null,
-                                userDetails.getAuthorities()
-                        );
-
-                // 🔥 Attach request details
-                authToken.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
-
-                // ✅ 5. Set authentication
-                SecurityContextHolder.getContext().setAuthentication(authToken);
+                    authToken.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
+                    SecurityContextHolder.getContext().setAuthentication(authToken);
+                }
+            } catch (Exception e) {
+                log.debug("JWT auth skipped: {}", e.getMessage());
             }
         }
 
-        // ✅ Continue filter chain
         filterChain.doFilter(request, response);
     }
 }

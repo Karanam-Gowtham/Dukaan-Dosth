@@ -4,9 +4,13 @@ import { FiTrendingUp, FiTrendingDown, FiPackage, FiUsers, FiDollarSign, FiClock
 import { Link } from 'react-router-dom';
 import api from '../../api/axios';
 import { useToast } from '../../context/ToastContext';
+import { useAuth } from '../../context/AuthContext';
 import './Dashboard.css';
 
 export default function DashboardPage() {
+  const { user } = useAuth();
+  const displayName = (user?.name && user.name.trim()) || 'Shop owner';
+  const avatarLetter = displayName.charAt(0).toUpperCase() || '?';
   const [stats, setStats] = useState({
     salesToday: 0,
     expensesToday: 0,
@@ -100,10 +104,10 @@ export default function DashboardPage() {
         <div className="dash-header-actions">
           <select className="dash-store-select"><option>Main Branch</option></select>
           <div className="dash-user">
-            <div className="dash-avatar">S</div>
+            <div className="dash-avatar">{avatarLetter}</div>
             <div className="dash-user-info">
-              <span className="user-name">Srinivas</span>
-              <span className="user-role">Shop Owner</span>
+              <span className="user-name">{displayName}</span>
+              <span className="user-role">{user?.shopName || 'Shop owner'}</span>
             </div>
           </div>
         </div>
@@ -111,8 +115,8 @@ export default function DashboardPage() {
 
       <div className="dash-main-content">
         <div className="dash-welcome">
-          <h2>Welcome back, Srinivas! 👋</h2>
-          <p>Here is what's happening in your shop today.</p>
+          <h2>Welcome back, {displayName}! 👋</h2>
+          <p>Here is what&apos;s happening in your shop today.</p>
         </div>
 
         {loading ? <div className="spinner"></div> : (

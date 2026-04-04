@@ -1,6 +1,18 @@
 import axios from 'axios';
 
-const API_BASE = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8080';
+/**
+ * When unset: same host as the SPA + :8080 (LAN demo from phone works).
+ * For hosted frontend (e.g. Vercel) + separate API, set VITE_API_BASE_URL.
+ */
+function resolveApiBase() {
+  const fromEnv = import.meta.env.VITE_API_BASE_URL;
+  if (fromEnv && String(fromEnv).trim()) return String(fromEnv).trim();
+  if (typeof window === 'undefined') return 'http://localhost:8080';
+  const { protocol, hostname } = window.location;
+  return `${protocol}//${hostname}:8080`;
+}
+
+const API_BASE = resolveApiBase();
 
 const api = axios.create({
   baseURL: API_BASE,

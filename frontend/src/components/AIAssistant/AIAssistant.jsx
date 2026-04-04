@@ -50,8 +50,7 @@ export default function AIAssistant() {
         }
       };
 
-      rec.onerror = (e) => {
-        console.error('Speech recognition error', e);
+      rec.onerror = () => {
         setIsListening(false);
       };
 
@@ -60,8 +59,6 @@ export default function AIAssistant() {
       };
 
       recognitionRef.current = rec;
-    } else {
-      console.warn('Speech Recognition API not supported in this browser.');
     }
   }, [lang]);
 

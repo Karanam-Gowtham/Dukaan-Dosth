@@ -5,6 +5,16 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { FiPhone, FiLock, FiUser, FiShoppingBag } from 'react-icons/fi';
 import './Auth.css';
 
+function extractApiError(err, fallback) {
+  const d = err.response?.data;
+  if (!d) return fallback;
+  if (d.data && typeof d.data === 'object' && !Array.isArray(d.data)) {
+    const first = Object.values(d.data).find((v) => typeof v === 'string');
+    if (first) return first;
+  }
+  return d.message || fallback;
+}
+
 export default function AuthPage() {
   const [isLogin, setIsLogin] = useState(true);
   const [loading, setLoading] = useState(false);
@@ -27,7 +37,7 @@ export default function AuthPage() {
       await login(loginPhone, loginPassword);
       navigate('/');
     } catch (err) {
-      setError(err.response?.data?.message || 'Login failed. Please try again.');
+      setError(extractApiError(err, 'Login failed. Please try again.'));
     } finally {
       setLoading(false);
     }
@@ -41,7 +51,7 @@ export default function AuthPage() {
       await register(regName, regPhone, regPassword, regShop);
       navigate('/');
     } catch (err) {
-      setError(err.response?.data?.message || 'Registration failed. Please try again.');
+      setError(extractApiError(err, 'Registration failed. Please try again.'));
     } finally {
       setLoading(false);
     }

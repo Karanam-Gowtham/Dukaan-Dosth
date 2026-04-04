@@ -26,6 +26,11 @@ public class GroqAIService {
     private final GroqConfig groqConfig;
     private final ObjectMapper objectMapper;
 
+    private boolean groqConfigured() {
+        String k = groqConfig.getKey();
+        return k != null && !k.isBlank();
+    }
+
     /**
      * Generate AI summary text based on daily business data
      */
@@ -35,6 +40,10 @@ public class GroqAIService {
 
         String prompt = buildPrompt(totalSales, totalExpenses, profit, language,
                 previousDaySales, previousDayExpenses);
+
+        if (!groqConfigured()) {
+            return getFallbackSummary(totalSales, totalExpenses, profit, language);
+        }
 
         try {
             Map<String, Object> requestBody = Map.of(
@@ -156,6 +165,13 @@ public class GroqAIService {
                      .append("- Low Stock Items: ").append(stats.getLowStockItemsCount()).append("\n\n")
                      .append("Keep your answer extremely concise, like a voice assistant (1-3 sentences maximum).");
 
+        if (!groqConfigured()) {
+            if ("te".equals(language)) {
+                return "AI కీ సెట్ చేయబడలేదు. డాష్‌బోర్డ్‌లోని సంఖ్యలను చూడండి.";
+            }
+            return "AI is not configured (missing GROQ_API_KEY). Check your dashboard numbers for now.";
+        }
+
         try {
             Map<String, Object> requestBody = Map.of(
                     "model", groqConfig.getModel(),
@@ -210,6 +226,10 @@ public class GroqAIService {
                 + "CREDIT_GIVEN = credit/udhaar given to a customer; CREDIT_RECEIVED = repayment received. JSON only, no markdown.";
 
         String user = "Text: \"" + rawInput.replace("\"", "'") + "\"";
+
+        if (!groqConfigured()) {
+            return heuristicParse(rawInput);
+        }
 
         try {
             Map<String, Object> requestBody = Map.of(

@@ -9,6 +9,8 @@ import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.stereotype.Service;
 
 import javax.crypto.SecretKey;
+import java.nio.charset.StandardCharsets;
+import java.security.MessageDigest;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.Map;
@@ -21,9 +23,28 @@ public class JwtService {
     private final JwtConfig jwtConfig;
 
     private SecretKey getSigningKey() {
-        return Keys.hmacShaKeyFor(
-                Decoders.BASE64.decode(jwtConfig.getSecret())
-        );
+        String raw = jwtConfig.getSecret();
+        if (raw == null || raw.isBlank()) {
+            raw = "change-me-to-a-long-random-secret-for-local-dev-only";
+        }
+        byte[] keyBytes;
+        try {
+            keyBytes = Decoders.BASE64.decode(raw);
+            if (keyBytes.length < 32) {
+                keyBytes = sha256Bytes(raw);
+            }
+        } catch (IllegalArgumentException e) {
+            keyBytes = sha256Bytes(raw);
+        }
+        return Keys.hmacShaKeyFor(keyBytes);
+    }
+
+    private static byte[] sha256Bytes(String s) {
+        try {
+            return MessageDigest.getInstance("SHA-256").digest(s.getBytes(StandardCharsets.UTF_8));
+        } catch (Exception e) {
+            throw new IllegalStateException("Could not derive JWT signing key", e);
+        }
     }
 
     // ✅ Generate JWT token

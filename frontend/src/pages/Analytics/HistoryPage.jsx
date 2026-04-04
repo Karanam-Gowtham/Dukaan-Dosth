@@ -61,8 +61,7 @@ const HistoryPage = () => {
         const res = await api.get('/api/ledger', { params: { limit: 1000 } });
         const rows = unwrapData(res) || [];
         setTransactions(Array.isArray(rows) ? rows : []);
-      } catch (err) {
-        console.error('History Fetch Error:', err);
+      } catch {
         toast.error('Could not load ledger');
       } finally {
         setLoading(false);
